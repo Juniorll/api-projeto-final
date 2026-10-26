@@ -1,0 +1,23 @@
+{
+  "name": "api-projeto-final",
+  "version": "1.0.0",
+  "description": "> Sistema de biblioteca. O sistema irá ajudar os leitores a controlarem seus livros.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+  "dev": "node --watch --env-file=.env src/server.js",
+  "start": "node src/server.js"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Juniorll/api-projeto-final.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Juniorll/api-projeto-final/issues"
+  },
+  "homepage": "https://github.com/Juniorll/api-projeto-final#readme"
+}
