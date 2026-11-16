@@ -13,5 +13,4 @@ export function buscarChamadoPorId (req, res) {
   } else {
     return res.status(404).json({ error: 'Chamado não encontrado' });
   }
-})
 }
