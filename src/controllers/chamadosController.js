@@ -1,62 +1,89 @@
-import { chamados } from '../data/chamados.js';
+// Controller: as regras de cada operação de chamados. Os dados vêm do banco (Prisma).
+import { prisma } from '../lib/prisma.js';
 
-// GET Chamados
-export function listarChamados (req, res) {
+// GET /api/chamados
+export async function listarChamados(req, res) {
+  const chamados = await prisma.chamado.findMany({ orderBy: { id: 'asc' } });
   res.json(chamados);
 }
 
-export function buscarChamadoPorId (req, res) {
-  const id = parseInt(req.params.id);
-  const chamado = chamados.find(c => c.id === id);
-  if (chamado) {
-    return res.json(chamado);
-  } else {
-    return res.status(404).json({ error: 'Chamado não encontrado' });
+// GET /api/chamados/:id
+export async function buscarChamadoPorId(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ erro: 'O id precisa ser um número' });
   }
+  const chamado = await prisma.chamado.findUnique({ where: { id } });
+  if (!chamado) {
+    return res.status(404).json({ erro: 'Chamado não encontrado' });
+  }
+  res.json(chamado);
 }
 
 // POST /api/chamados
-export function criar(req, res) {
+export async function criar(req, res) {
   // req.body vem vazio (undefined) se o cliente não enviar JSON; ?? {} evita o erro
-  const { titulo, prioridade, status } = req.body ?? {};
+  const { titulo, descricao, prioridade, status, categoriaId } = req.body ?? {};
   if (!titulo) {
     return res.status(400).json({ erro: 'O campo titulo é obrigatório' });
   }
-  const novoId = chamados.length > 0 ? chamados[chamados.length - 1].id + 1 : 1;
-  const novo = {
-    id: novoId,
-    titulo,
-    prioridade: prioridade ?? 'media',
-    status: status ?? 'aberto',
-  };
-  chamados.push(novo);
+  if (!categoriaId) {
+    return res.status(400).json({ erro: 'O campo categoriaId é obrigatório' });
+  }
+  const categoria = await prisma.categoria.findUnique({ where: { id: Number(categoriaId) } });
+  if (!categoria) {
+    return res.status(400).json({ erro: 'categoriaId não existe' });
+  }
+  // campos que não chegaram ficam undefined: o banco usa o valor padrão ou deixa vazio
+  const novo = await prisma.chamado.create({
+    data: {
+      titulo,
+      descricao,
+      prioridade,
+      status,
+      categoriaId: categoria.id,
+    },
+  });
   res.status(201).json(novo);
 }
 
 // PUT /api/chamados/:id
-export function atualizar(req, res) {
+export async function atualizar(req, res) {
   const id = Number(req.params.id);
-  const posicao = chamados.findIndex((c) => c.id === id);
-  if (posicao === -1) {
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ erro: 'O id precisa ser um número' });
+  }
+  const existe = await prisma.chamado.findUnique({ where: { id } });
+  if (!existe) {
     return res.status(404).json({ erro: 'Chamado não encontrado' });
   }
   const dados = req.body ?? {};
   if (dados.titulo === '') {
     return res.status(400).json({ erro: 'O campo titulo não pode ficar vazio' });
   }
-  // junta o que já existia com o que chegou; o id nunca muda
-  const atualizado = { ...chamados[posicao], ...dados, id };
-  chamados[posicao] = atualizado;
+  // campos que não chegaram ficam undefined, e o Prisma não os altera
+  const atualizado = await prisma.chamado.update({
+    where: { id },
+    data: {
+      titulo: dados.titulo,
+      descricao: dados.descricao,
+      prioridade: dados.prioridade,
+      status: dados.status,
+    },
+  });
   res.json(atualizado);
 }
 
 // DELETE /api/chamados/:id
-export function excluir(req, res) {
+export async function excluir(req, res) {
   const id = Number(req.params.id);
-  const posicao = chamados.findIndex((c) => c.id === id);
-  if (posicao === -1) {
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ erro: 'O id precisa ser um número' });
+  }
+  const existe = await prisma.chamado.findUnique({ where: { id } });
+  if (!existe) {
     return res.status(404).json({ erro: 'Chamado não encontrado' });
   }
-  chamados.splice(posicao, 1);
+  await prisma.chamado.delete({ where: { id } });
   res.status(204).send();
 }
